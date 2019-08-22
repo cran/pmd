@@ -4,7 +4,7 @@ author: "Miao Yu"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteIndexEntry{PMD analysis}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -107,6 +107,21 @@ plotstdrt(std,rtcluster = 49,main = 'Retention time group 49')
 plotstdrt(std,rtcluster = 6,main = 'Retention time group 6')
 ```
 
+### Use independent peaks for MS/MS validation
+
+Independent peaks are supporsing generated from different compounds. We could use those peaks for MS/MS analysis instead of DIA or DDA. Here we need multiple injections for one sample since it might be impossible to get all ions' fragmental ions in one injection with good sensitivity. You could use `gettarget` to generate the index for the injections and output the peaks for each run.
+
+```{r gettarget}
+# you need retention time for independent peaks
+index <- gettarget(std$rt[std$stdmassindex])
+# output the ions for each injection
+table(index)
+# show the ions for the first injection
+std$mz[index==1]
+std$rt[index==1]
+```
+
+
 ### Validation by principal components analysis(PCA)
 
 You need to check the GlobalStd algorithm's results by principal components analysis(PCA).
@@ -114,11 +129,47 @@ You need to check the GlobalStd algorithm's results by principal components anal
 ```{r pca}
 library(enviGCMS)
 par(mfrow = c(1,2),mar = c(4,4,2,1)+0.1)
-plotpca(std$data,lv = as.numeric(std$group$class),main = substitute(paste(italic('in vivo'), " SPME samples(all peaks)")))
-plotpca(std$data[std$stdmassindex,],lv = as.numeric(std$group$class),main = substitute(paste(italic('in vivo'), " SPME samples(selected peaks)")))
+plotpca(std$data,lv = as.numeric(as.factor(std$group)),main = substitute(paste(italic('in vivo'), " SPME samples(all peaks)")))
+plotpca(std$data[std$stdmassindex,],lv = as.numeric(as.factor(std$group)),main = substitute(paste(italic('in vivo'), " SPME samples(selected peaks)")))
 ```
 
-## Structure/reaction directed analysis
+### Comparision with other packages
+
+GlobalStd algorithm in `pmd` package could be treated as a way to extract pseudospectra. You could use `getcluster` to get peaks groups information for all GlobalStd peaks. Then you could choose export peaks with the highest intensities in each GlobalStd peaks groups.
+
+```{r comp}
+stdcluster <- getcluster(std)
+# extract pseudospectra for std peak 71
+plot(stdcluster$cluster$mz[stdcluster$cluster$i==71],stdcluster$cluster$ins[stdcluster$cluster$i==71],type = 'h',xlab = 'm/z',ylab = 'intensity',main = 'pseudospectra for GlobalStd peak 711')
+# export peaks with the highest intensities in each GlobalStd peaks groups.
+data <- stdcluster$data[stdcluster$stdmassindex2,]
+```
+
+You could also use `getcorcluster` to find peaks groups by correlation analysis only.
+
+```{r corcomp}
+corcluster <- getcorcluster(spmeinvivo)
+par(mfrow = c(1,3),mar = c(4,4,2,1)+0.1)
+plotpca(std$data,lv = as.numeric(as.factor(std$group)),main = substitute(paste(italic('in vivo'), " SPME samples(all peaks)")))
+plotpca(std$data[std$stdmassindex,],lv = as.numeric(as.factor(std$group)),main = substitute(paste(italic('in vivo'), " SPME samples(selected peaks)")))
+plotpca(std$data[corcluster$stdmassindex,],lv = as.numeric(as.factor(std$group)),main = substitute(paste(italic('in vivo'), " SPME samples(selected peaks by correlationship)")))
+```
+
+
+### GlobalStd algorithm with intensity data
+
+GlobalStd algorithm is designed to analysis data without intensity data. However, if you have intensity data, the independant peaks could be selected with more confindence. You could set up cutoff of Pearson Correlation Coefficient between peaks to refine the peaks selected by GlobalStd within same retention time groups.
+
+```{r globalcor}
+std2 <- getstd(pmd,corcutoff = 0.9)
+par(mfrow = c(1,3),mar = c(4,4,2,1)+0.1)
+plotpca(std2$data,lv = as.numeric(as.factor(std2$group)),main = substitute(paste(italic('in vivo'), " SPME samples(all peaks)")))
+plotpca(std$data[std$stdmassindex,],lv = as.numeric(as.factor(std$group)),main = substitute(paste(italic('in vivo'), " SPME samples(selected peaks)")))
+plotpca(std2$data[std2$stdmassindex,],lv = as.numeric(as.factor(std2$group)),main = substitute(paste(italic('in vivo'), " SPME samples(selected peaks)")))
+```
+
+
+## Structure/Reaction directed analysis
 
 `getsda` function could be used to perform Structure/reaction directed analysis. `freqcutoff` could be used to filter the PMD with high frequncy.
 
@@ -157,6 +208,56 @@ plotstdsda(sdaall,sdaall$sda$diff2 == 28.03)
 plotstdsda(sdaall,sdaall$sda$diff2 == 58.04)
 ```
 
+### Structure/reaction directed analysis for peaks/compounds only
+
+When you only have data of peaks without retention time or compounds list, structure/reaction directed analysis could also be done by `getrda` function.
+
+```{r rda}
+sda <- getrda(spmeinvivo$mz[std$stdmassindex])
+```
+
+### Structure/Reaction Network
+
+One peak or compounds could be involved in multiple reactions. You could construct a network by such relationship.
+
+If you have a specific compound and want to check the metabolites of certain PMD, you could use `getchain` to extract the network of that compounds
+
+```{r tarnet}
+library(igraph)
+# check metabolites of C18H39NO
+chain <- getchain(spmeinvivo,diff = c(2.02,14.02,15.99,58.04,13.98),mass = 286.3101)
+# show as network
+net <- graph_from_data_frame(chain$sdac,directed = F)
+plot(net,vertex.label=NA,vertex.size = as.numeric((names(V(net))))/25,edge.width = E(net)$diff2/20+0.00001)
+```
+
+If you want to see all the independant peaks' high frequency PMDs as a network, the following code will help
+
+```{r net}
+sda <- getsda(std, freqcutoff = 10)
+df <- sda$sda
+net <- graph_from_data_frame(df,directed = F)
+plot(net,vertex.label=NA,vertex.size = as.numeric((names(V(net))))/25,edge.width = E(net)$diff2/20+0.00001)
+# Check the degree of the nodes
+# Show the degree distribution of the vertices
+deg <- degree(net, mode="all")
+degree_distribution(net)
+plot(net, vertex.size=deg/2,vertex.label=NA,vertex.size = as.numeric((names(V(net))))/25, edge.width = E(net)$diff2/20+0.00001)
+# network community structure detection
+ceb <- cluster_edge_betweenness(net,weights = abs(E(net)$cor), directed = F) 
+plot(ceb, net,vertex.label=NA,) 
+```
+
+## Parameters selection
+
+Retention time cluster cutoff should fit the peak picking algorithm. For HPLC, 10 is suggested and 5 could be used for UPLC.
+
+Global PMD's retention time group numbers should be around 20 percent of the retention time cluster numbers. For example, if you find 100 retention time clusters, I suggested you use 20 as the empirical global PMD's retention time group numbers.
+
+As for the cutoff of the frequency of PMDs, you could change the frequency until you find certain PMD which you're sure that it should appear in your dataset. For example, 16 should be considered as a good start. Any pmd with the frequency larger than PMD 16 could be further discussed.
+
+Another important hint is that pre-filter your peak list by black samples or other quality control samples. Otherwise the running time would be long and lots of pmd relationship would be just from noise.
+
 ## Wrap function
 
 `globalstd` function is a wrap funtion to process GlobalStd algorithm and structure/reaction directed analysis in one line. All the plot function could be directly used on the `list` objects from `globalstd` function.
@@ -172,3 +273,4 @@ An interactive document has been included in this package to show PMD analysis. 
 ## Conclusion
 
 `pmd` package could be used to reduce the redundancy peaks for GC/LC-MS based research and perform structure/reaction directed analysis to screen known and unknown important compounds or reactions.
+
