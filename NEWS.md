@@ -1,3 +1,30 @@
+# pmd 0.1.9
+
+- CRAN
+
+# pmd 0.1.8
+
+- update kegg/hmdb database
+- update getsda to use largest average distance to find pmd freqency cutoff, more robust to large dataset
+
+# pmd 0.1.7
+
+- add function for pmd ms/ms annotation
+- add function to read in msp file as database
+- detach rcdk package
+- add function to link pos/neg by pmd
+
+# pmd 0.1.6
+
+- rewrite getchain to speed up
+- add shiny application pmdnet to perform PMD network analysis
+- add support for formula in getchain to find compounds ions
+- remove frequency cutoff in getsda and use PMD network clusters analysis to determine the cutoff
+- add merge feature for getcluster and such methods could be used to furthor reduce the GlobalStd peaks
+- remove hmdbp data since pmd network analysis could cover this topic
+- remove the dependance of group for quantitative paired peaks
+- improve shiny application for sda analysis
+
 # pmd 0.1.5
 
 - CRAN

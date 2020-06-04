@@ -2,8 +2,8 @@ Package: pmd
 Type: Package
 Title: Paired Mass Distance Analysis for GC/LC-MS Based Non-Targeted
         Analysis
-Version: 0.1.5
-Date: 2019-08-21
+Version: 0.1.9
+Date: 2020-06-04
 Authors@R: person(given = "Miao", family = "YU",
         role = c("aut", "cre"), 
         email = "yufreecas@gmail.com",
@@ -15,14 +15,14 @@ BugReports: https://github.com/yufree/pmd/issues
 License: GPL-2
 Encoding: UTF-8
 LazyData: true
-Suggests: knitr, enviGCMS, igraph
+Suggests: knitr, shiny, rmarkdown, MSnbase
 VignetteBuilder: knitr
 biocViews:
 Depends: R (>= 3.5.0)
-Imports: RColorBrewer, shiny, rmarkdown, rcdk, stats, utils
-RoxygenNote: 6.1.1
+Imports: RColorBrewer, stats, graphics, utils, igraph, enviGCMS
+RoxygenNote: 7.1.0
 NeedsCompilation: no
-Packaged: 2019-08-22 15:23:53 UTC; yum14
+Packaged: 2020-06-04 17:15:10 UTC; yufree
 Author: Miao YU [aut, cre] (<https://orcid.org/0000-0002-2804-6014>)
 Repository: CRAN
-Date/Publication: 2019-08-22 15:50:02 UTC
+Date/Publication: 2020-06-04 17:50:02 UTC

@@ -4,25 +4,30 @@
 \alias{globalstd}
 \title{GlobalStd algorithm with structure/reaction directed analysis}
 \usage{
-globalstd(list, rtcutoff = 10, ng = 10, corcutoff = NULL,
-  freqcutoff = 10, top = 50, digits = 2, accuracy = 4)
+globalstd(
+  list,
+  rtcutoff = 10,
+  ng = 10,
+  corcutoff = NULL,
+  digits = 2,
+  accuracy = 4,
+  freqcutoff = NULL
+)
 }
 \arguments{
 \item{list}{a peaks list with mass to charge, retention time and intensity data}
 
 \item{rtcutoff}{cutoff of the distances in cluster, default 10}
 
-\item{ng}{cutoff of global PMD's retention time group numbers}
+\item{ng}{cutoff of global PMD's retention time group numbers, default 10. If ng = NULL, 20 percent of RT cluster will be used as ng.}
 
 \item{corcutoff}{cutoff of the correlation coefficient, default NULL}
-
-\item{freqcutoff}{cutoff of frequency of PMDs between RT cluster for independent peaks, default 10}
-
-\item{top}{top n pmd freqency cutoff when the freqcutoff is too small for large data set, default 50}
 
 \item{digits}{mass or mass to charge ratio accuracy for pmd, default 2}
 
 \item{accuracy}{measured mass or mass to charge ratio in digits, default 4}
+
+\item{freqcutoff}{pmd freqency cutoff for structures or reactions, default NULL. This cutoff will be found by PMD network analysis when it is NULL.}
 }
 \value{
 list with GlobalStd algorithm processed data.

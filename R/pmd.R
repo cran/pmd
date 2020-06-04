@@ -1,7 +1,7 @@
 #' Filter ions/peaks based on retention time hierarchical clustering, paired mass distances(PMD) and PMD frequency analysis.
 #' @param list a list with mzrt profile
 #' @param rtcutoff cutoff of the distances in retention time hierarchical clustering analysis, default 10
-#' @param ng cutoff of global PMD's retention time group numbers, default NULL
+#' @param ng cutoff of global PMD's retention time group numbers, default 10. If ng = NULL, 20 percent of RT cluster will be used as ng.
 #' @param digits mass or mass to charge ratio accuracy for pmd, default 2
 #' @param accuracy measured mass or mass to charge ratio in digits, default 4
 #' @return list with tentative isotope, multi-chargers, adducts, and neutral loss peaks' index, retention time clusters.
@@ -13,7 +13,7 @@
 getpaired <-
         function(list,
                  rtcutoff = 10,
-                 ng = NULL,
+                 ng = 10,
                  digits = 2,
                  accuracy = 4) {
                 # paired mass diff analysis
@@ -58,24 +58,6 @@ getpaired <-
                                                         rtg = i,
                                                         cor = cor[lower.tri(cor)]
                                                 )
-                                        # remove multi chargers
-                                        multiindex <-
-                                                (round(df$diff %% 1, 1) == 0.5)
-                                        multiindex2 <-
-                                                (round(df$diff, 1) == 0.5)
-                                        mass <-
-                                                unique(df[multiindex, 1], df[multiindex, 2])
-                                        mass2 <-
-                                                unique(df[multiindex2, 1], df[multiindex2, 2])
-                                        multimass <-
-                                                mass[round(mass %% 1, 1) == 0.5 |
-                                                             round(mass, accuracy) %in% round(mass2, accuracy)]
-                                        dfmulti <- df[multiindex, ]
-                                        if (nrow(dfmulti) > 0) {
-                                                df <-
-                                                        df[!(df[, 1] %in% multimass) &
-                                                                   !(df[, 2] %in% multimass),]
-                                        }
                                         # remove isotope
                                         isoindex <-
                                                 (round(df$diff, digits) != 0) &
@@ -97,20 +79,36 @@ getpaired <-
                                                                 df$diff < 1
                                                 )
                                                 )
-                                        massstd <-
-                                                apply(df[isoindex,], 1, function(x)
-                                                        min(x[1], x[2]))
+                                        # higher is C13
+                                        # massstd <-
+                                        #         apply(df[isoindex,], 1, function(x)
+                                        #                 min(x[1], x[2]))
                                         massstdmax <-
                                                 apply(df[isoindex,], 1, function(x)
                                                         max(x[1], x[2]))
                                         isomass <-
-                                                unique(c(massstd[(massstd %in% massstdmax)], massstdmax))
+                                                unique(massstdmax)
                                         dfiso <- df[isoindex, ]
                                         if (nrow(dfiso) > 0) {
                                                 df <-
                                                         df[!(df[, 1] %in% isomass) &
                                                                    !(df[, 2] %in% isomass), ]
                                         }
+                                        # remove multi chargers
+                                        multiindex <-
+                                         (round(df$diff %% 1, 1) == 0.5)
+                                        dfmulti <- df[multiindex, ]
+                                        mass <-
+                                         unique(df[multiindex, 1], df[multiindex, 2])
+                                        # From HMDB lowest mass with 0.5 is 394.4539, remove those ions related pmd
+                                        multimass <-
+                                         mass[round(mass %% 1, 1) == 0.5 & mass<350]
+
+                                        if (nrow(dfmulti) > 0) {
+                                                 df <-
+                                                         df[!(df[, 1] %in% multimass) & !(df[, 2] %in% multimass),]
+                                        }
+
                                         dfdiff <- df
                                         return(
                                                 list(
@@ -148,51 +146,36 @@ getpaired <-
                                                         rt = medianrtxi,
                                                         rtg = i
                                                 )
-                                        # remove multi chargers
-                                        multiindex <-
-                                                (round(df$diff %% 1, 1) == 0.5)
-                                        multiindex2 <-
-                                                (round(df$diff, 1) == 0.5)
-                                        mass <-
-                                                unique(df[multiindex, 1], df[multiindex, 2])
-                                        mass2 <-
-                                                unique(df[multiindex2, 1], df[multiindex2, 2])
-                                        multimass <-
-                                                mass[round(mass %% 1, 1) == 0.5 |
-                                                             round(mass, accuracy) %in% round(mass2, accuracy)]
-                                        dfmulti <- df[multiindex, ]
-                                        if (nrow(dfmulti) > 0) {
-                                                df <-
-                                                        df[!(df[, 1] %in% multimass) &
-                                                                   !(df[, 2] %in% multimass),]
-                                        }
-                                        # remove isotope
-                                        isoindex <-
-                                                (round(df$diff, digits) != 0) &
-                                                ((
-                                                        df$diff %% 1 < 0.01 &
-                                                                df$diff >= 1 &
-                                                                df$diff < 2
-                                                ) | (
-                                                        df$diff %% 2 < 0.01 &
-                                                                df$diff >= 2 &
-                                                                df$diff < 3
-                                                )
-                                                )
-                                        massstd <-
-                                                apply(df[isoindex,], 1, function(x)
-                                                        min(x[1], x[2]))
+                                        # higher is C13
+                                        # massstd <-
+                                        #         apply(df[isoindex,], 1, function(x)
+                                        #                 min(x[1], x[2]))
                                         massstdmax <-
                                                 apply(df[isoindex,], 1, function(x)
                                                         max(x[1], x[2]))
                                         isomass <-
-                                                unique(c(massstd[(massstd %in% massstdmax)], massstdmax))
+                                                unique(massstdmax)
                                         dfiso <- df[isoindex, ]
                                         if (nrow(dfiso) > 0) {
                                                 df <-
                                                         df[!(df[, 1] %in% isomass) &
                                                                    !(df[, 2] %in% isomass), ]
                                         }
+                                        # remove multi chargers
+                                        multiindex <-
+                                                (round(df$diff %% 1, 1) == 0.5)
+                                        dfmulti <- df[multiindex, ]
+                                        mass <-
+                                                unique(df[multiindex, 1], df[multiindex, 2])
+                                        # From HMDB lowest mass with 0.5 is 394.4539, remove those ions related pmd
+                                        multimass <-
+                                                mass[round(mass %% 1, 1) == 0.5 & mass<350]
+
+                                        if (nrow(dfmulti) > 0) {
+                                                df <-
+                                                        df[!(df[, 1] %in% multimass) & !(df[, 2] %in% multimass),]
+                                        }
+
                                         dfdiff <- df
                                         return(
                                                 list(
@@ -667,11 +650,10 @@ getstd <-
 #' Perform structure/reaction directed analysis for peaks list.
 #' @param list a list with mzrt profile
 #' @param rtcutoff cutoff of the distances in retention time hierarchical clustering analysis, default 10
-#' @param freqcutoff cutoff of frequency of PMDs between RT cluster for peaks, default 10
-#' @param top top n pmd freqency cutoff when the freqcutoff is too small for large data set, default 50
 #' @param corcutoff cutoff of the correlation coefficient, default NULL
 #' @param digits mass or mass to charge ratio accuracy for pmd, default 2
 #' @param accuracy measured mass or mass to charge ratio in digits, default 4
+#' @param freqcutoff pmd frequency cutoff for structures or reactions, default NULL. This cutoff will be found by PMD network analysis when it is NULL.
 #' @return list with tentative isotope, adducts, and neutral loss peaks' index, retention time clusters.
 #' @examples
 #' data(spmeinvivo)
@@ -683,11 +665,10 @@ getstd <-
 getsda <-
         function(list,
                  rtcutoff = 10,
-                 freqcutoff = 10,
-                 top = 50,
                  corcutoff = NULL,
                  digits = 2,
-                 accuracy = 4) {
+                 accuracy = 4,
+                 freqcutoff = NULL) {
                 if (is.null(list$stdmass) & is.null(list$paired)) {
                         mz <- list$mz
                         rt <- list$rt
@@ -707,7 +688,6 @@ getsda <-
                         rtg <- list$rtcluster[list$stdmassindex]
                 }
                 # PMD analysis
-                # remove isomers
                 dis <- stats::dist(mz, method = "manhattan")
                 disrt <- stats::dist(rt, method = "manhattan")
                 disrtg <- stats::dist(rtg, method = "manhattan")
@@ -733,6 +713,25 @@ getsda <-
                                         rtgdiff = as.numeric(disrtg),
                                         cor = cor[lower.tri(cor)]
                                 )
+                        }else{
+                                df <- data.frame(
+                                        ms1 = mz[which(lower.tri(dis), arr.ind = T)[,
+                                                                                    1]],
+                                        ms2 = mz[which(lower.tri(dis), arr.ind = T)[,
+                                                                                    2]],
+                                        diff = as.numeric(dis),
+                                        rt1 = rt[which(lower.tri(disrt),
+                                                       arr.ind = T)[, 1]],
+                                        rt2 = rt[which(lower.tri(disrt),
+                                                       arr.ind = T)[, 2]],
+                                        diffrt = as.numeric(disrt),
+                                        rtg1 = rtg[which(lower.tri(disrtg),
+                                                         arr.ind = T)[, 1]],
+                                        rtg2 = rtg[which(lower.tri(disrtg),
+                                                         arr.ind = T)[, 2]],
+                                        rtgdiff = as.numeric(disrtg)
+                                )
+                                }
                         df <- df[df$rtgdiff > 0,]
                         df$diff2 <- round(df$diff, digits)
                         # use unique isomers
@@ -744,97 +743,63 @@ getsda <-
                         diff <- df$diff2[index]
                         freq <-
                                 table(diff)[order(table(diff), decreasing = T)]
-                        if (!is.null(top)) {
-                                freq <- utils::head(freq, top)
-                                message(
-                                        paste(
-                                                "Top",
-                                                top,
-                                                "high frequency PMD groups were remained.",
-                                                "\n"
-                                        )
-                                )
+                if (is.null(freqcutoff)) {
+                        dis <- c()
+                        for (i in c(1:ifelse(length(freq)>100,100,length(freq)))){
+                                pmd <- as.numeric(names(freq))[1:i]
+                                dfx <- df[df$diff2 %in% pmd,c(1,2)]
+                                net <- igraph::graph_from_data_frame(dfx,directed = F)
+                                dis[i] <- igraph::mean_distance(net)
+                        }
+                        n <- which.max(dis)
+                        freqt <- freq[n-1]
+                        if(n==100){
+                                warning("Average distance is still increasing, you need to check manually for frequency cutoff.")
+                        }
+                        if(sum(df$diff2 == 0)>freqt & 0 %in% as.numeric(names(freq))){
+                        list$sda <- df[df$diff2 %in% c(0,as.numeric(names(freq[freq>freqt]))),]
+                        }else{
+                        list$sda <- df[df$diff2 %in% as.numeric(names(freq[freq>freqt])),]
+                        }
+                        message(paste("PMD frequency cutoff is", freqt, 'by PMD network analysis with largest network average distance',round(max(dis),2),'.'))
+                        # i <- dis <- t <- 1
+                        # while(n>=t){
+                        #         pmd <- as.numeric(names(freq[freq>i]))
+                        #         dfx <- df[df$diff2 %in% pmd,c(1,2)]
+                        #         net <- igraph::graph_from_data_frame(dfx,directed = F)
+                        #         t <- n
+                        #         n <- length(igraph::groups(igraph::components(net)))
+                        #         i <- i+1
+                        # }
+                        # message(paste("PMD frequency cutoff is", i-1, 'by PMD network analysis with',t,'clusters.'))
+                        # if(sum(df$diff2 == 0)>(i-1) & 0 %in% as.numeric(names(freq))){
+                        #         list$sda <- df[df$diff2 %in% c(0,as.numeric(names(freq[freq>(i-1)]))),]
+                        # }else{
+                        #         list$sda <- df[df$diff2 %in% as.numeric(names(freq[freq>(i-1)])),]
+                        # }
+                        }else{
+                                if (sum(df$diff2 == 0) > freqcutoff &
+                                    0 %in% as.numeric(names(freq))) {
+                                        list$sda <- df[(df$diff2 %in% c(0, as.numeric(names(
+                                                freq[freq >=
+                                                             freqcutoff]
+                                        )))),]
+                                } else{
+                                        list$sda <- df[(df$diff2 %in% c(as.numeric(names(
+                                                freq[freq >=
+                                                             freqcutoff]
+                                        )))),]
+                                }
                         }
 
-                        if (sum(df$diff2 == 0) > freqcutoff &
-                            0 %in% as.numeric(names(freq))) {
-                                list$sda <- df[(df$diff2 %in% c(0, as.numeric(names(
-                                        freq[freq >=
-                                                     freqcutoff]
-                                )))),]
-                        } else{
-                                list$sda <- df[(df$diff2 %in% c(as.numeric(names(
-                                        freq[freq >=
-                                                     freqcutoff]
-                                )))),]
-                        }
-                        if (!is.null(corcutoff)) {
+                        if (!is.null(corcutoff)&!is.null(data)) {
                                 list$sda <- list$sda[abs(list$sda$cor) >= corcutoff, ]
                         }
-
-                } else{
-                        df <- data.frame(
-                                ms1 = mz[which(lower.tri(dis), arr.ind = T)[,
-                                                                            1]],
-                                ms2 = mz[which(lower.tri(dis), arr.ind = T)[,
-                                                                            2]],
-                                diff = as.numeric(dis),
-                                rt1 = rt[which(lower.tri(disrt),
-                                               arr.ind = T)[, 1]],
-                                rt2 = rt[which(lower.tri(disrt),
-                                               arr.ind = T)[, 2]],
-                                diffrt = as.numeric(disrt),
-                                rtg1 = rtg[which(lower.tri(disrtg),
-                                                 arr.ind = T)[, 1]],
-                                rtg2 = rtg[which(lower.tri(disrtg),
-                                                 arr.ind = T)[, 2]],
-                                rtgdiff = as.numeric(disrtg)
-                        )
-
-                        df <- df[df$rtgdiff > 0,]
-                        df$diff2 <- round(df$diff, digits)
-
-                        # use unique isomers
-                        index <-
-                                !duplicated(paste0(
-                                        round(df$ms1, accuracy),
-                                        round(df$ms2, accuracy)
-                                ))
-                        diff <- df$diff2[index]
-                        freq <-
-                                table(diff)[order(table(diff), decreasing = T)]
-                        if (!is.null(top)) {
-                                freq <- utils::head(freq, top)
-                                message(
-                                        paste(
-                                                "Top",
-                                                top,
-                                                "high frequency PMD groups were remained.",
-                                                "\n"
-                                        )
-                                )
-                        }
-
-                        if (sum(df$diff2 == 0) > freqcutoff) {
-                                list$sda <- df[(df$diff2 %in% c(0, as.numeric(names(
-                                        freq[freq >=
-                                                     freqcutoff]
-                                )))),]
-                        } else{
-                                list$sda <- df[(df$diff2 %in% c(as.numeric(names(
-                                        freq[freq >=
-                                                     freqcutoff]
-                                )))),]
-                        }
-                }
-
-
                 # show message about std mass
                 sub <- names(table(list$sda$diff2))
                 n <- length(sub)
-                message(paste(n, "groups were found as high frequency PMD group.",
-                              "\n"))
-                message(paste(sub, "were found as high frequency PMD.",
+                message(paste(n, "groups were found as high frequency PMD group."))
+                message(paste(sub, "was found as high frequency PMD.",
                               "\n"))
                 return(list)
         }
@@ -842,12 +807,11 @@ getsda <-
 #' GlobalStd algorithm with structure/reaction directed analysis
 #' @param list a peaks list with mass to charge, retention time and intensity data
 #' @param rtcutoff cutoff of the distances in cluster, default 10
-#' @param ng cutoff of global PMD's retention time group numbers
-#' @param top top n pmd freqency cutoff when the freqcutoff is too small for large data set, default 50
+#' @param ng cutoff of global PMD's retention time group numbers, default 10. If ng = NULL, 20 percent of RT cluster will be used as ng.
 #' @param corcutoff cutoff of the correlation coefficient, default NULL
-#' @param freqcutoff cutoff of frequency of PMDs between RT cluster for independent peaks, default 10
 #' @param digits mass or mass to charge ratio accuracy for pmd, default 2
 #' @param accuracy measured mass or mass to charge ratio in digits, default 4
+#' @param freqcutoff pmd freqency cutoff for structures or reactions, default NULL. This cutoff will be found by PMD network analysis when it is NULL.
 #' @return list with GlobalStd algorithm processed data.
 #' @examples
 #' data(spmeinvivo)
@@ -858,10 +822,9 @@ globalstd <- function(list,
                       rtcutoff = 10,
                       ng = 10,
                       corcutoff = NULL,
-                      freqcutoff = 10,
-                      top = 50,
                       digits = 2,
-                      accuracy = 4) {
+                      accuracy = 4,
+                      freqcutoff = NULL) {
         list <-
                 getpaired(
                         list,
@@ -882,10 +845,9 @@ globalstd <- function(list,
                         getsda(
                                 list2,
                                 rtcutoff = rtcutoff,
-                                freqcutoff = freqcutoff,
                                 corcutoff = corcutoff,
-                                top = top,
-                                digits = digits
+                                digits = digits,
+                                freqcutoff = freqcutoff
                         )
         } else{
                 message('no paired relationship, directly go to structure directed analysis.')
@@ -893,10 +855,9 @@ globalstd <- function(list,
                         getsda(
                                 list,
                                 rtcutoff = rtcutoff,
-                                freqcutoff = freqcutoff,
                                 corcutoff = corcutoff,
-                                top = top,
-                                digits = digits
+                                digits = digits,
+                                freqcutoff = freqcutoff
                         )
         }
 
@@ -1001,9 +962,9 @@ getcluster <- function(list,
         } else{
                 data <- list$data
                 if (is.matrix(data)) {
-                        msdata <- apply(data, 1, mean)
+                        msdata <- apply(data, 1, sum)
                 } else {
-                        msdata <- mean(data)
+                        msdata <-sum(data)
                 }
         }
 
@@ -1022,13 +983,10 @@ getcluster <- function(list,
 
         # multi-charger
         index1 <-
-                paste0(round(resultmulti$ms1, accuracy),
-                       '@',
-                       resultmulti$rtg)
+                paste0(round(resultmulti$ms1, accuracy), '@', resultmulti$rtg)
         index2 <-
-                paste0(round(resultmulti$ms2, accuracy),
-                       '@',
-                       resultmulti$rtg)
+                paste0(round(resultmulti$ms2, accuracy), '@', resultmulti$rtg)
+
         # isotope
         index3 <-
                 paste0(round(resultiso$ms1, accuracy), '@', resultiso$rtg)
@@ -1058,34 +1016,48 @@ getcluster <- function(list,
                 diffover <-
                         unique(c(resultdiff$ms2[index5 %in% indexstd], resultdiff$ms1[index6 %in% indexstd]))
                 stdmassg <- c(mzt, multiover, isoover, diffover)
-                mzx <- mz[mz %in% stdmassg]
-                stdg[round(list$mz, accuracy) %in% round(stdmassg, accuracy) &
-                             list$rtcluster == rtgt] <-
-                        paste0(stdg[round(list$mz, accuracy) %in% round(stdmassg, accuracy) &
-                                            list$rtcluster == rtgt], '@', i)
+                mzx <- list$mz[list$mz %in% stdmassg]
                 if (!is.null(msdata)) {
                         index <- paste0(round(mzx, accuracy), '@', rtgt)
                         ins <- msdata[index000 %in% unique(index)]
 
                         tdf <-
                                 cbind.data.frame(mz = mzx[!duplicated(index)], i, rtgt, ins)
-                        mzst <- index[which.max(tdf$ins)]
-                        mzs <- c(mzs, mzst)
                 } else{
                         tdf <- cbind.data.frame(stdmassg, i, rtgt)
                 }
 
                 cluster <- rbind.data.frame(cluster, tdf)
+
         }
-        list$stdg <- stdg
-        list$cluster <- cluster
+        mergegroup <- function(temp){
+                t <- any(table(temp$mz)>1)
+                if(t){
+                        cluster2 <- temp[!duplicated(temp$mz),]
+                        ti<-igraph::components(igraph::graph_from_data_frame(temp))$membership[1:length(cluster2$mz)]
+                        cluster2$largei <- paste0(ti,'@',cluster2$rtgt)
+                        return(cluster2)
+                }else{
+                        temp$largei <-  paste0(temp$i,'@',temp$rtgt)
+                        return(temp)
+                }
+        }
+        cl <- split(cluster,cluster$rtgt)
+        cluster <- lapply(cl, mergegroup)
+        list$cluster <- do.call("rbind", cluster)
+        if (!is.null(msdata)) {
+                for(i in unique(list$cluster$largei)){
+                        t <- list$cluster[list$cluster$largei==i,]
+                        mzst <- paste0(unique(round(t$mz[which.max(t$ins)],accuracy)),'@',t$rtgt[1])
+                        mzs <- c(mzs, mzst)
+                }
+        }
         if (!is.null(mzs)) {
                 list$stdmassindex2 <-
                         paste0(round(list$mz, accuracy), '@', list$rtcluster) %in% mzs
         }
         return(list)
 }
-
 #' Perform structure/reaction directed analysis for mass only.
 #' @param mz numeric vector for independant mass or mass to charge ratio. Mass to charge ratio from GlobalStd algorithm is suggested. Isomers would be excluded automately
 #' @param freqcutoff pmd freqency cutoff for structures or reactions, default 10
@@ -1106,26 +1078,11 @@ getrda <-
                  digits = 3,
                  top = 20,
                  formula = NULL) {
-                getmass <- function(data) {
-                        if (grepl('-', data)) {
-                                name <- unlist(strsplit(data, '-'))
-                                iso1 <-
-                                        rcdk::get.isotopes.pattern(rcdk::get.formula(name[1]))
-                                iso2 <-
-                                        rcdk::get.isotopes.pattern(rcdk::get.formula(name[2]))
-                                cus <-
-                                        as.numeric(iso1[max(iso1[, 2]), 1]) - as.numeric(iso2[max(iso2[, 2]), 1])
-                        } else{
-                                iso <- rcdk::get.isotopes.pattern(rcdk::get.formula(data))
-                                cus <-
-                                        as.numeric(iso[max(iso[, 2]), 1])
-                        }
-                        return(cus)
-                }
+
                 if (is.null(formula)) {
                         dis <- stats::dist(mz, method = "manhattan")
                 } else{
-                        mz <- unlist(Map(getmass, formula))
+                        mz <- unlist(Map(enviGCMS::getmass, formula))
                         dis <- stats::dist(mz, method = "manhattan")
 
                 }
@@ -1245,25 +1202,78 @@ getpmd <-
 #' Get reaction chain for specific mass to charge ratio
 #' @param list a list with mzrt profile
 #' @param diff paired mass distance(s) of interests
-#' @param mass a specific mass for known compound or a vector of masses
+#' @param mass a specific mass for known compound or a vector of masses. You could also input formula for certain compounds
+#' @param digits mass or mass to charge ratio accuracy for pmd, default 2
 #' @param accuracy measured mass or mass to charge ratio in digits, default 4
-#' @param ... other parameters for getpmd
+#' @param rtcutoff cutoff of the distances in retention time hierarchical clustering analysis, default 10
+#' @param corcutoff cutoff of the correlation coefficient, default NULL
+#' @param ppm all the peaks within this mass accuracy as seed mass or formula
 #' @return a list with mzrt profile and reaction chain dataframe
 #' @examples
 #' data(spmeinvivo)
 #' # check metabolites of C18H39NO
 #' pmd <- getchain(spmeinvivo,diff = c(2.02,14.02,15.99),mass = 286.3101)
 #' @export
-getchain <- function(list, diff, mass, accuracy = 4, ...) {
-        sda <- getpmd(list, unique(diff)[1], ...)$pmd
-        if(length(unique(diff))>1){
-                for (i in 2:length(unique(diff))) {
-                        masst <- getpmd(list, unique(diff)[i], ...)
-                        if(NROW(masst$pmd)>0){
-                                sda <- rbind.data.frame(sda, masst$pmd)
-                        }
-                }
+getchain <- function(list, diff, mass, digits = 2, accuracy = 4, rtcutoff= 10, corcutoff=0.6,ppm=25) {
+        if (is.character(mass)) {
+                mass <- unlist(Map(enviGCMS::getmass, mass))
         }
+        massup <- mass+mass*ppm/10e6
+        massdown <- mass-mass*ppm/10e6
+        up <- sapply(Map(function(x)
+                x < massup, list$mz), function(x)
+                        sum(x&T)>0)
+        down <- sapply(Map(function(x)
+                x > massdown, list$mz), function(x)
+                        sum(x&T)>0)
+        mass <- list$mz[up & down]
+        mass <- unique(round(mass,accuracy))
+
+        mz <- list$mz
+        rt <- list$rt
+        data <- list$data
+        dis <- stats::dist(rt, method = "manhattan")
+        fit <- stats::hclust(dis)
+        rtg <- stats::cutree(fit, h = rtcutoff)
+        # PMD analysis
+        # remove isomers
+        dis <- stats::dist(mz, method = "manhattan")
+        disrt <- stats::dist(rt, method = "manhattan")
+        disrtg <- stats::dist(rtg, method = "manhattan")
+        cor <- stats::cor(t(data))
+
+        df <- data.frame(
+                ms1 = mz[which(lower.tri(dis), arr.ind = T)[,
+                                                            1]],
+                ms2 = mz[which(lower.tri(dis), arr.ind = T)[,
+                                                            2]],
+                diff = as.numeric(dis),
+                rt1 = rt[which(lower.tri(disrt),
+                               arr.ind = T)[, 1]],
+                rt2 = rt[which(lower.tri(disrt),
+                               arr.ind = T)[, 2]],
+                diffrt = as.numeric(disrt),
+                rtg1 = rtg[which(lower.tri(disrtg),
+                                 arr.ind = T)[, 1]],
+                rtg2 = rtg[which(lower.tri(disrtg),
+                                 arr.ind = T)[, 2]],
+                rtgdiff = as.numeric(disrtg),
+                cor = cor[lower.tri(cor)]
+        )
+
+        if (!is.null(corcutoff)) {
+                df <- df[abs(df$cor) >= corcutoff, ]
+        }
+
+        df$diff2 <- round(df$diff, digits)
+
+        df <- df[df$rtgdiff > 0,]
+        ms1 <- ifelse(df$ms1 > df$ms2, df$ms1, df$ms2)
+        ms2 <- ifelse(df$ms1 > df$ms2, df$ms2, df$ms1)
+        rtg1 <- ifelse(df$ms1 > df$ms2, df$rtg1, df$rtg2)
+        rtg2 <- ifelse(df$ms1 > df$ms2, df$rtg2, df$rtg1)
+
+        sda <- df[df$diff2 %in% diff,]
         seed <- NULL
         ms1 <- round(sda$ms1, digits = accuracy)
         ms2 <- round(sda$ms2, digits = accuracy)
@@ -1331,6 +1341,7 @@ getchain <- function(list, diff, mass, accuracy = 4, ...) {
 #' @param digits mass or mass to charge ratio accuracy for pmd, default 2
 #' @param accuracy measured mass or mass to charge ratio in digits, default 4
 #' @param ratiocv ratio cv cutoff for quantitative paired peaks, default 30
+#' @param outlier logical, if true, outliar of ratio will be removed, default False.
 #' @param ... other parameters for getpmd
 #' @return list with quantitative paired peaks.
 #' @examples
@@ -1345,6 +1356,7 @@ getreact <-
                  digits = 2,
                  accuracy = 4,
                  ratiocv = 30,
+                 outlier = F,
                  ...) {
                 p <-
                         pmd::getpmd(
@@ -1355,43 +1367,64 @@ getreact <-
                                 accuracy = accuracy,
                                 ...
                         )
-                getr <- function(v, nlv) {
+                # getr0 <- function(v, nlv) {
+                #         ratio <- NULL
+                #         for (i in 1:length(nlv)) {
+                #                 ratio1 <-
+                #                         sum(data[list$mz %in% v[1] & list$rt %in% v[4], grepl(nlv[i], group)])
+                #                 ratio2 <-
+                #                         sum(data[list$mz %in% v[2] & list$rt %in% v[5], grepl(nlv[i], group)])
+                #                 ratioi <- ratio1 / ratio2
+                #                 ratio <- c(ratio, ratioi)
+                #         }
+                #         rsd <-
+                #                 stats::sd(ratio, na.rm = T) / mean(ratio, na.rm = T) * 100
+                #         return(rsd)
+                # }
+                getr <- function(v) {
                         ratio <- NULL
-                        for (i in 1:length(nlv)) {
-                                ratio1 <-
-                                        sum(data[list$mz %in% v[1] & list$rt %in% v[4], grepl(nlv[i], group)])
-                                ratio2 <-
-                                        sum(data[list$mz %in% v[2] & list$rt %in% v[5], grepl(nlv[i], group)])
-                                ratioi <- ratio1 / ratio2
-                                ratio <- c(ratio, ratioi)
+                        ratio1 <-
+                                        data[list$mz %in% v[1] & list$rt %in% v[4], ]
+                        ratio2 <-
+                                        data[list$mz %in% v[2] & list$rt %in% v[5], ]
+                        ratio <- as.numeric(ratio1) / as.numeric(ratio2)
+                        if(outlier){
+                                outlier_values <- grDevices::boxplot.stats(ratio)$out
+                                ratio <- ratio[!ratio%in%outlier_values]
                         }
                         rsd <-
                                 stats::sd(ratio, na.rm = T) / mean(ratio, na.rm = T) * 100
                         return(rsd)
                 }
-                if (NCOL(list$group) > 1) {
-                        group <- apply(list$group, 1 , paste0, collapse = "")
-                        nlv <- unique(group)
-                } else{
-                        group <- c(t(list$group))
-                        nlv <- unique(group)
-                }
+                # if (NCOL(list$group) > 1) {
+                #         group <- apply(list$group, 1 , paste0, collapse = "")
+                #         nlv <- unique(group)
+                # } else{
+                #         group <- c(t(list$group))
+                #         nlv <- unique(group)
+                # }
                 if(sum(p$pmdindex)>0){
                         list <- enviGCMS::getfilter(p, p$pmdindex)
                         data <- list$data
                         pmd <- list$pmd
-                        list$pmd$r <- apply(pmd, 1, getr, nlv)
-                        list$pmd <- list$pmd[list$pmd$r < ratiocv, ]
-                        idx <- paste(list$mz, list$rt)
-                        idx2 <-
-                                unique(c(
-                                        paste(list$pmd$ms1, list$pmd$rt1),
-                                        paste(list$pmd$ms2, list$pmd$rt2)
-                                ))
-                        list <- enviGCMS::getfilter(list, idx %in% idx2)
-                        return(list)
+                        list$pmd$r <- apply(pmd, 1, getr)
+                        list$pmd <- list$pmd[list$pmd$r < ratiocv , ]
+                        list$pmd <- list$pmd[stats::complete.cases(list$pmd),]
+                        if(nrow(list$pmd)>0){
+                                idx <- paste(list$mz, list$rt)
+                                idx2 <-
+                                        unique(c(
+                                                paste(list$pmd$ms1, list$pmd$rt1),
+                                                paste(list$pmd$ms2, list$pmd$rt2)
+                                        ))
+                                list <- enviGCMS::getfilter(list, idx %in% idx2)
+                                return(list)
+                        }else{
+                                message('No quantitative peaks could be used.')
+                        }
+
                 }else{
-                        message('No quantitative peaks could be used.')
+                        message('No pmd peaks could be found.')
                 }
         }
 
@@ -1432,3 +1465,30 @@ gettarget <- function(rt, drt = 10, n = 6) {
         }
         return(inji)
 }
+
+#' Link pos mode peak list with neg mode peak list by pmd.
+#' @param pos a list with mzrt profile collected from positive mode.
+#' @param neg a list with mzrt profile collected from negative mode.
+#' @param pmd numeric or numeric vector
+#' @param digits mass or mass to charge ratio accuracy for pmd, default 2
+#' @return dataframe with filtered postive and negative peak list
+#' @export
+getposneg <- function(pos,neg, pmd = 2.02, digits = 2){
+        df <- NULL
+        x <- rep(NA,length(pos$mz))
+        for(i in 1:length(pos$mz)){
+                if(sum(round((pos$mz[i]-neg$mz),digits) %in% pmd) != 0){
+                        index <- round((pos$mz[i]-neg$mz),digits) %in% pmd
+                        if(sum(index)>1){
+                                cor <- apply(neg$data[index,],1,function(x) suppressWarnings(cor(x,pos$data[i,])))
+                        }else{
+                                cor <- suppressWarnings(cor(pos$data[i,],neg$data[index,]))
+                        }
+
+                        t <- cbind.data.frame(pos=pos$mz[i],rt = pos$rt[i],neg=neg$mz[index],rt=neg$rt[index],diffmz=pos$mz[i]-neg$mz[index],diffrt=pos$rt[i]-neg$rt[index],cor=cor)
+                        df <- rbind.data.frame(df,t)
+                }
+        }
+        return(df)
+}
+
