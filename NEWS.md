@@ -1,3 +1,23 @@
+# pmd 0.2.1
+
+- CRAN
+
+# pmd 0.2.0
+
+- add option to skip sda in GlobalStd algorithm and set default to F
+- organize the R files
+- add vignette for reactomics analysis
+- add correlation directed analysis function
+- modified getcorcluster function to find independent peaks
+- add vignette section for reduced independent peaks selection in GlobalStd algorithm
+- fix the issue for getchain with multiple masses
+- fix the correlation issue in pos/neg linkage function
+- Output within RT clusters high frequencies PMD(s) as message for user to check
+- Change default ng to NULL in getpared function for automately generate parameter based on data
+- update with citation of cc paper
+- fix the bug in pmd ms/ms annotation due to the change of enviGCMS package
+- fix the order issue from CRAN
+
 # pmd 0.1.9
 
 - CRAN
