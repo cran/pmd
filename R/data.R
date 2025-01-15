@@ -4,11 +4,24 @@
 #' @format A data frame with 94 rows and 4 variables:
 #' \describe{
 #'   \item{PMD}{Paired mass distances}
-#'   \item{origin}{potentical sources}
+#'   \item{origin}{potential sources}
 #'   \item{Ref.}{references}
 #'   \item{mode}{positive, negative or both mode to find corresponding PMDs}
 #'   }
 "sda"
+
+#' mass spectrometry contaminants database for PMD check
+#' @docType data
+#' @usage data(MaConDa)
+#' @format A data frame from \doi{doi:10.1093/bioinformatics/bts527} with 308 rows and 5 variables:
+#' \describe{
+#'   \item{id}{MaConDa ID}
+#'   \item{name}{contaminants}
+#'   \item{formula}{contaminants fomula}
+#'   \item{exact_mass}{exact mass of contaminants}
+#'   \item{type_of_contaminant}{type of contaminant}
+#'   }
+"MaConDa"
 
 #' A peaks list dataset containing 9 samples from 3 fish with triplicates samples for each fish from LC-MS.
 #' @docType data
@@ -22,7 +35,7 @@
 #'   }
 "spmeinvivo"
 
-#' A dataframe containing HMDB with unique accurate mass pmd with three digits frequence larger than 1 and accuracy percentage larger than 0.9.
+#' A dataframe containing HMDB with unique accurate mass pmd with three digits frequency larger than 1 and accuracy percentage larger than 0.9.
 #' @docType data
 #' @usage data(hmdb)
 #' @format A dataframe with atoms numbers of C, H, O, N, P, S

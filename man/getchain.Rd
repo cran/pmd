@@ -28,7 +28,7 @@ getchain(
 
 \item{rtcutoff}{cutoff of the distances in retention time hierarchical clustering analysis, default 10}
 
-\item{corcutoff}{cutoff of the correlation coefficient, default NULL}
+\item{corcutoff}{cutoff of the correlation coefficient, default 0.6}
 
 \item{ppm}{all the peaks within this mass accuracy as seed mass or formula}
 }
@@ -41,5 +41,8 @@ Get reaction chain for specific mass to charge ratio
 \examples{
 data(spmeinvivo)
 # check metabolites of C18H39NO
+pmd <- getchain(spmeinvivo,diff = c(2.02,14.02,15.99),mass = 286.3101)
+# remove the retention time for mass only data
+spmeinvivo$rt <- NULL
 pmd <- getchain(spmeinvivo,diff = c(2.02,14.02,15.99),mass = 286.3101)
 }

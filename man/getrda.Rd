@@ -4,21 +4,36 @@
 \alias{getrda}
 \title{Perform structure/reaction directed analysis for mass only.}
 \usage{
-getrda(mz, freqcutoff = 10, digits = 3, top = 20, formula = NULL)
+getrda(
+  mz,
+  pmd = NULL,
+  freqcutoff = 10,
+  digits = 3,
+  top = 20,
+  formula = NULL,
+  mdrange = c(0.25, 0.9),
+  verbose = FALSE
+)
 }
 \arguments{
-\item{mz}{numeric vector for independant mass or mass to charge ratio. Mass to charge ratio from GlobalStd algorithm is suggested. Isomers would be excluded automately}
+\item{mz}{numeric vector for independent mass or mass to charge ratio. Mass to charge ratio from GlobalStd algorithm is suggested. Isomers would be excluded automated}
 
-\item{freqcutoff}{pmd freqency cutoff for structures or reactions, default 10}
+\item{pmd}{a specific paired mass distance or a vector of pmds, default NULL}
+
+\item{freqcutoff}{pmd frequency cutoff for structures or reactions, default 10}
 
 \item{digits}{mass or mass to charge ratio accuracy for pmd, default 3}
 
-\item{top}{top n pmd freqency cutoff when the freqcutoff is too small for large data set}
+\item{top}{top n pmd frequency cutoff when the freqcutoff is too small for large data set}
 
 \item{formula}{vector for formula when you don't have mass or mass to charge ratio data}
+
+\item{mdrange}{mass defect range to ignore. Default c(0.25,0.9) to retain the possible reaction related paired mass}
+
+\item{verbose}{logic, if TURE, return will be llist with paired mass distances table. Default FALSE.}
 }
 \value{
-logical matrix with row as the same order of mz or formula and column as high freqency pmd group
+logical matrix with row as the same order of mz or formula and column as high  frequency pmd group when verbose is FALSE
 }
 \description{
 Perform structure/reaction directed analysis for mass only.
@@ -28,6 +43,7 @@ data(spmeinvivo)
 pmd <- getpaired(spmeinvivo)
 std <- getstd(pmd)
 sda <- getrda(spmeinvivo$mz[std$stdmassindex])
+sda <- getrda(spmeinvivo$mz, pmd = c(2.016,15.995,18.011,14.016))
 }
 \seealso{
 \code{\link{getsda}}

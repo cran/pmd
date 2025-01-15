@@ -126,7 +126,13 @@ sda2 <- getsda(std, corcutoff = 0.9)
 plotstdsda(sda2)
 
 ## ----rda----------------------------------------------------------------------
-sda <- getrda(spmeinvivo$mz[std$stdmassindex])
+sda <- getrda(spmeinvivo$mz)
+# check high frequency pmd
+colnames(sda)
+# get certain pmd related m/z
+idx <- sda[,'2.016']
+# show the m/z
+spmeinvivo$mz[idx]
 
 ## ----wrap---------------------------------------------------------------------
 result <- globalstd(spmeinvivo, sda=FALSE)

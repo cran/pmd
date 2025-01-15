@@ -18,7 +18,7 @@ knitr::opts_chunk$set(echo = F)
 knitr::include_graphics('https://yufree.github.io/presentation/figure/demomzrt.png')
 ```
 
-The uploaded file should be one csv file. The first column should be peak ID. The second column should be mass to charge ratio of peaks. The third column should be retention time in seconds. The other column should be peaks intensities in each samples. The header should be 'mz', 'rt', and sample names. The second row should include group information of each sample. Such file could be output by `getcsv` function for a 'mzrt' object from enviGCMS package. However, it's also easy to manually write one csv file as shown above. Here is the demo csv [file](https://raw.githubusercontent.com/yufree/rmwf/master/inst/demodata/demomzrt.csv).
+The uploaded file should be one csv file. The first column should be peak ID. The second column should be mass to charge ratio of peaks. The third column should be retention time in seconds. The other column should be peaks intensities in each samples. The header should be 'mz', 'rt', and sample names. The second row should include group information of each sample. Such file could be output by `getcsv` function for a 'mzrt' object from enviGCMS package. However, it's also easy to manually write one csv file as shown above. Here is the demo csv [file](https://raw.githubusercontent.com/yufree/rmwf/master/inst/demodata/pmd/demomzrt.csv).
 
 ### Parameters
 
@@ -48,7 +48,7 @@ inputPanel(
               min = 1, max = 200, value = 10, step = 1),
   checkboxInput("cor", label = 'Use intensity',value = F),
   sliderInput("corcutoff", label = "Cutoff for the correlation coefficient",
-              min = 0, max = 1, value = NULL, step = 0.1),
+              min = 0, max = 1, value = 0.6, step = 0.1),
   sliderInput("digits", label = "Digits of mass to charge ratio",
               min = 1, max = 10, value = 2, step = 1),
   sliderInput("accuracy", label = "Measured mass or mass to charge ratio in digits",

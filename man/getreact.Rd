@@ -10,8 +10,9 @@ getreact(
   rtcutoff = 10,
   digits = 2,
   accuracy = 4,
-  ratiocv = 30,
-  outlier = F,
+  cvcutoff = 30,
+  outlier = FALSE,
+  method = "static",
   ...
 )
 }
@@ -26,9 +27,11 @@ getreact(
 
 \item{accuracy}{measured mass or mass to charge ratio in digits, default 4}
 
-\item{ratiocv}{ratio cv cutoff for quantitative paired peaks, default 30}
+\item{cvcutoff}{ratio or intensity cv cutoff for quantitative paired peaks, default 30}
 
-\item{outlier}{logical, if true, outliar of ratio will be removed, default False.}
+\item{outlier}{logical, if true, outlier of ratio will be removed, default False.}
+
+\item{method}{quantification method can be 'static' or 'dynamic'. See details.}
 
 \item{...}{other parameters for getpmd}
 }
@@ -37,6 +40,9 @@ list with quantitative paired peaks.
 }
 \description{
 Get quantitative paired peaks list for specific reaction/pmd
+}
+\details{
+PMD based reaction quantification methods have two options: 'static' will only consider the stable mass pairs across samples and such reactions will be limited by the enzyme or other factors than substrates. 'dynamic' will consider the unstable paired masses by normalization the relatively unstable peak with stable peak between paired masses and such reactions will be limited by one or both peaks in the paired masses.
 }
 \examples{
 data(spmeinvivo)

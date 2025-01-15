@@ -4,6 +4,7 @@
 #' @param ng cutoff of global PMD's retention time group numbers, If ng = NULL, 20 percent of RT cluster will be used as ng, default NULL.
 #' @param digits mass or mass to charge ratio accuracy for pmd, default 2
 #' @param accuracy measured mass or mass to charge ratio in digits, default 4
+#' @param mdrange mass defect range to ignore. Default NULL and c(0.25,0.9) to retain the possible reaction related paired mass
 #' @return list with tentative isotope, multi-chargers, adducts, and neutral loss peaks' index, retention time clusters.
 #' @examples
 #' data(spmeinvivo)
@@ -15,27 +16,9 @@ getpaired <-
                  rtcutoff = 10,
                  ng = NULL,
                  digits = 2,
-                 accuracy = 4) {
-                # paired mass diff analysis
-                dis <- stats::dist(list$rt, method = "manhattan")
-                fit <- stats::hclust(dis)
-                rtcluster <- stats::cutree(fit, h = rtcutoff)
-                n <- length(unique(rtcluster))
-                message(paste(n, "retention time cluster found."))
-                # automate ng selection when ng is NULL
-                ng <- ifelse(is.null(ng), round(n * 0.2), ng)
-                if (!is.null(list$data)) {
-                        groups <- cbind.data.frame(mz = list$mz,
-                                                   rt = list$rt,
-                                                   list$data)
-                } else {
-                        groups <- cbind.data.frame(mz = list$mz,
-                                                   rt = list$rt)
-                        message('No intensity data!')
-                }
-
-                split <- split.data.frame(groups, rtcluster)
-
+                 accuracy = 4,
+                 mdrange = NULL) {
+                # Convert a pmd data.frame to isotope, multi, and diff pmd data.frame list.
                 rtpmd <- function(bin, i) {
                         medianrtxi <- stats::median(bin$rt)
                         if (ncol(bin) > 2) {
@@ -50,9 +33,9 @@ getpaired <-
                                         df <-
                                                 data.frame(
                                                         ms1 = bin$mz[which(lower.tri(dis),
-                                                                           arr.ind = T)[, 1]],
+                                                                           arr.ind = TRUE)[, 1]],
                                                         ms2 = bin$mz[which(lower.tri(dis),
-                                                                           arr.ind = T)[, 2]],
+                                                                           arr.ind = TRUE)[, 2]],
                                                         diff = as.numeric(dis),
                                                         rt = medianrtxi,
                                                         rtg = i,
@@ -96,17 +79,17 @@ getpaired <-
                                         }
                                         # remove multi chargers
                                         multiindex <-
-                                         (round(df$diff %% 1, 1) == 0.5)
+                                                (round(df$diff %% 1, 1) == 0.5)
                                         dfmulti <- df[multiindex, ]
                                         mass <-
-                                         unique(df[multiindex, 1], df[multiindex, 2])
+                                                unique(df[multiindex, 1], df[multiindex, 2])
                                         # From HMDB lowest mass with 0.5 is 394.4539, remove those ions related pmd
                                         multimass <-
-                                         mass[round(mass %% 1, 1) == 0.5 & mass<350]
+                                                mass[round(mass %% 1, 1) == 0.5 & mass<350]
 
                                         if (nrow(dfmulti) > 0) {
-                                                 df <-
-                                                         df[!(df[, 1] %in% multimass) & !(df[, 2] %in% multimass),]
+                                                df <-
+                                                        df[!(df[, 1] %in% multimass) & !(df[, 2] %in% multimass),]
                                         }
 
                                         dfdiff <- df
@@ -139,9 +122,9 @@ getpaired <-
                                         df <-
                                                 data.frame(
                                                         ms1 = bin$mz[which(lower.tri(dis),
-                                                                           arr.ind = T)[, 1]],
+                                                                           arr.ind = TRUE)[, 1]],
                                                         ms2 = bin$mz[which(lower.tri(dis),
-                                                                           arr.ind = T)[, 2]],
+                                                                           arr.ind = TRUE)[, 2]],
                                                         diff = as.numeric(dis),
                                                         rt = medianrtxi,
                                                         rtg = i
@@ -199,27 +182,54 @@ getpaired <-
                         }
                 }
 
+                # paired mass diff analysis
+                dis <- stats::dist(list$rt, method = "manhattan")
+                fit <- stats::hclust(dis)
+                rtcluster <- stats::cutree(fit, h = rtcutoff)
+                n <- length(unique(rtcluster))
+                message(paste(n, "retention time cluster found."))
+                # automate ng selection when ng is NULL
+                ng <- ifelse(is.null(ng), round(n * 0.2), ng)
+                if (!is.null(list$data)) {
+                        groups <- cbind.data.frame(mz = list$mz,
+                                                   rt = list$rt,
+                                                   list$data)
+                } else {
+                        groups <- cbind.data.frame(mz = list$mz,
+                                                   rt = list$rt)
+                        message('No intensity data!')
+                }
+
+                split <- split.data.frame(groups, rtcluster)
+
                 rtpmdtemp <-
                         mapply(rtpmd,
                                split,
                                as.numeric(names(split)),
-                               SIMPLIFY = F)
+                               SIMPLIFY = FALSE)
                 result <- do.call(Map, c(rbind, rtpmdtemp))
 
                 # filter the list get the rt cluster
                 list$rtcluster <- rtcluster
                 result$dfdiff$diff2 <-
                         round(result$dfdiff$diff, digits)
-                # speed up
+                result$dfdiff$md <- result$dfdiff$diff%%1
+                # speed up by mass defect
+                if(is.null(mdrange)){
+                        list$diff <- result$dfdiff
+                }else{
+                        list$diff <- result$dfdiff <- result$dfdiff[result$dfdiff$md<mdrange[1]|result$dfdiff$md>mdrange[2],]
+                }
+                # speed up by group
                 pmd <-
                         as.numeric(names(table(result$dfdiff$diff2)[table(result$dfdiff$diff2) > ng]))
                 # pmd <- unique(result$dfdiff$diff2)
                 idx <- NULL
-                for (i in 1:length(pmd)) {
+                for (i in seq_along(pmd)) {
                         l <-
                                 length(unique(result$dfdiff[result$dfdiff$diff2 == pmd[i], 'rtg']))
                         idx <-
-                                c(idx, ifelse(l > ng, T, F))
+                                c(idx, ifelse(l > ng, TRUE, FALSE))
                 }
                 pmd2 <- pmd[idx]
                 list$paired <-
@@ -245,7 +255,7 @@ getpaired <-
                                       accuracy)
                         ),
                         c(result$dfdiff$rtg, result$dfdiff$rtg))
-                list$diff <- result$dfdiff
+
                 # get the data index by rt groups with single ions
                 if (!is.null(result$solo)) {
                         list$soloindex <-
@@ -362,7 +372,7 @@ getstd <-
                 ))
                 # print(rtg2A)
                 if (sum(index2A) > 0) {
-                        for (i in 1:length(rtg2A)) {
+                        for (i in seq_along(rtg2A)) {
                                 mass <- list$mz[list$rtcluster == rtg2A[i]]
                                 rt <- list$rt[list$rtcluster == rtg2A[i]]
                                 mass <- max(mass)
@@ -396,7 +406,7 @@ getstd <-
                         collapse = " "
                 ))
                 if (sum(index2B1) > 0) {
-                        for (i in 1:length(rtg2B1)) {
+                        for (i in seq_along(rtg2B1)) {
                                 # filter the isotope peaks
                                 dfiso <-
                                         resultiso[resultiso$rtg == rtg2B1[i],]
@@ -443,7 +453,7 @@ getstd <-
                 ))
                 # print(rtg2B2)
                 if (sum(index2B2) > 0) {
-                        for (i in 1:length(rtg2B2)) {
+                        for (i in seq_along(rtg2B2)) {
                                 # filter the paired peaks
                                 df <-
                                         resultdiff[resultdiff$rtg == rtg2B2[i],]
@@ -486,7 +496,7 @@ getstd <-
                 ))
                 # print(rtg2B3)
                 if (sum(index2B3) > 0) {
-                        for (i in 1:length(rtg2B3)) {
+                        for (i in seq_along(rtg2B3)) {
                                 # filter the isotope peaks
                                 dfiso <-
                                         resultiso[resultiso$rtg == rtg2B3[i],]
@@ -508,9 +518,9 @@ getstd <-
                                                 stats::dist(massstd, method = "manhattan")
                                         df <- data.frame(
                                                 ms1 = massstd[which(lower.tri(dis),
-                                                                    arr.ind = T)[, 1]],
+                                                                    arr.ind = TRUE)[, 1]],
                                                 ms2 = massstd[which(lower.tri(dis),
-                                                                    arr.ind = T)[, 2]],
+                                                                    arr.ind = TRUE)[, 2]],
                                                 diff = round(as.numeric(dis),
                                                              digits)
                                         )
@@ -610,7 +620,7 @@ getstd <-
                 # use correlation to refine peaks within the same retention groups
                 if (!is.null(corcutoff)) {
                         mzo <- NULL
-                        for (i in 1:length(unique(list$rtcluster))) {
+                        for (i in seq_along(unique(list$rtcluster))) {
                                 resulttemp <- list$data[list$rtcluster == i & list$stdmassindex,]
                                 mz <-
                                         list$mz[list$rtcluster == i &
@@ -618,9 +628,9 @@ getstd <-
                                 cor2 <- stats::cor(t(resulttemp))
                                 df <- data.frame(
                                         ms1 = mz[which(lower.tri(cor2),
-                                                       arr.ind = T)[, 1]],
+                                                       arr.ind = TRUE)[, 1]],
                                         ms2 = mz[which(lower.tri(cor2),
-                                                       arr.ind = T)[, 2]],
+                                                       arr.ind = TRUE)[, 2]],
                                         cor = cor2[lower.tri(cor2)]
                                 )
                                 df2 <-
@@ -655,7 +665,8 @@ getstd <-
 #' @param corcutoff cutoff of the correlation coefficient, default NULL
 #' @param digits mass or mass to charge ratio accuracy for pmd, default 2
 #' @param accuracy measured mass or mass to charge ratio in digits, default 4
-#' @param freqcutoff pmd freqency cutoff for structures or reactions, default NULL. This cutoff will be found by PMD network analysis when it is NULL.
+#' @param freqcutoff pmd frequency cutoff for structures or reactions, default NULL. This cutoff will be found by PMD network analysis when it is NULL.
+#' @param mdrange mass defect range to ignore. Default NULL and c(0.25,0.9) to retain the possible reaction related paired mass
 #' @param sda logical, option to perform structure/reaction directed analysis, default FALSE.
 #' @return list with GlobalStd algorithm processed data.
 #' @examples
@@ -670,6 +681,7 @@ globalstd <- function(list,
                       digits = 2,
                       accuracy = 4,
                       freqcutoff = NULL,
+                      mdrange = NULL,
                       sda = FALSE) {
         list <-
                 getpaired(
@@ -677,7 +689,8 @@ globalstd <- function(list,
                         rtcutoff = rtcutoff,
                         ng = ng,
                         digits = digits,
-                        accuracy = accuracy
+                        accuracy = accuracy,
+                        mdrange = mdrange
                 )
         if (sum(list$pairedindex) > 0) {
                 list2 <-
@@ -745,7 +758,7 @@ getcorcluster <- function(list,
         cluster <- mzs <- mzo <- NULL
         data <- list$data
 
-        for (i in 1:length(unique(rtcluster))) {
+        for (i in seq_along(unique(rtcluster))) {
                 # find the mass within RT
                 if(sum(rtcluster==i)>1){
                         bin <- data[rtcluster == i,]
@@ -757,9 +770,9 @@ getcorcluster <- function(list,
                         mzt <- round(mz[rtcluster == i],digits = accuracy)
                         cor2 <- stats::cor(t(bin))
                         df <- data.frame(ms1 = mzt[which(lower.tri(cor2),
-                                                         arr.ind = T)[, 1]],
+                                                         arr.ind = TRUE)[, 1]],
                                          ms2 = mzt[which(lower.tri(cor2),
-                                                         arr.ind = T)[, 2]],
+                                                         arr.ind = TRUE)[, 2]],
                                          cor = cor2[lower.tri(cor2)])
                         dfc <- df[df$cor>=corcutoff,]
                         # select larger ions
@@ -775,7 +788,7 @@ getcorcluster <- function(list,
                                 mzc <- mzt[ins %in% mztnl$x]
                                 mzi <-  mzt[!(mzt %in% mztn)]
                                 clustert <- NULL
-                                for(j in 1:length(unique(x))){
+                                for(j in seq_along(unique(x))){
                                         mzic <- round(as.numeric(igraph::V(nt)$name), accuracy)[x==j]
                                         inst <- ins[x==j]
                                         tdf <- cbind.data.frame(mz=mzic, i=j, rtgt=i, ins=inst)
@@ -790,7 +803,7 @@ getcorcluster <- function(list,
                                 mzo <- c(mzo, paste0(df2, '@', i))
                                 mzs <- c(mzs, mzc,mzi)
                         }else{
-                                clustert <- cbind.data.frame(mz=mzt, i=1:length(mzt), rtgt=i, ins=msdata)
+                                clustert <- cbind.data.frame(mz=mzt, i=seq_along(mzt), rtgt=i, ins=msdata)
                                 cluster <- rbind(cluster,clustert)
                                 mzo <- c(mzo, paste0(mzt, '@', i))
                                 mzs <- c(mzs, mzt)
@@ -798,7 +811,7 @@ getcorcluster <- function(list,
                         }
                 }else{
                         mzt <- round(mz[rtcluster == i],digits = accuracy)
-                        clustert <- cbind.data.frame(mz=mzt, i=1:length(mz[rtcluster==i]), rtgt=i, ins=mean(data[rtcluster==i,]))
+                        clustert <- cbind.data.frame(mz=mzt, i=seq_along(mz[rtcluster==i]), rtgt=i, ins=mean(data[rtcluster==i,]))
                         cluster <- rbind(cluster,clustert)
                         mzo <- c(mzo, paste0(mzt, '@', i))
                         mzs <- c(mzs, mzt)
@@ -914,7 +927,7 @@ getcluster <- function(list,
                 t <- any(table(temp$mz)>1)
                 if(t){
                         cluster2 <- temp[!duplicated(temp$mz),]
-                        ti<-igraph::components(igraph::graph_from_data_frame(temp))$membership[1:length(cluster2$mz)]
+                        ti<-igraph::components(igraph::graph_from_data_frame(temp))$membership[seq_along(cluster2$mz)]
                         cluster2$largei <- paste0(ti,'@',cluster2$rtgt)
                         return(cluster2)
                 }else{
@@ -958,7 +971,7 @@ pcasf <- function(x, y, dim = NULL) {
         cov.y <- stats::cov(y)
 
         if (is.null(dim)){
-                dim = dim(cov.x)[1]
+                dim <- dim(cov.x)[1]
         }
 
         eg.x <- eigen(cov.x)

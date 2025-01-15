@@ -18,7 +18,7 @@ knitr::opts_chunk$set(echo = TRUE)
 knitr::include_graphics('https://yufree.github.io/presentation/figure/democsv.png')
 ```
 
-The uploaded file should be one csv file. The first column should be peak ID. The second column should be mass to charge ratio of peaks. The third column should be retention time in seconds. The other column should be peaks intensities in each samples. The header should be 'mz', 'rt', and sample names. The second row should include group information of each sample. Such file could be output by `getcsv` function for a 'mzrt' object from enviGCMS package. However, it's also easy to manually write one csv file as shown above. Here is the demo csv [file](https://raw.githubusercontent.com/yufree/rmwf/master/inst/demodata/tbbpamzrt.csv).
+The uploaded file should be one csv file. The first column should be peak ID. The second column should be mass to charge ratio of peaks. The third column should be retention time in seconds. The other column should be peaks intensities in each samples. The header should be 'mz', 'rt', and sample names. The second row should include group information of each sample. Such file could be output by `getcsv` function for a 'mzrt' object from enviGCMS package. However, it's also easy to manually write one csv file as shown above. Here is the demo csv [file](https://raw.githubusercontent.com/yufree/rmwf/master/inst/demodata/pmd/tbbpamzrt.csv).
 
 ```{r chain, echo=FALSE}
 inputPanel(
@@ -27,7 +27,7 @@ inputPanel(
   sliderInput("rtcutoff", label = "Cutoff for retention time cluster analysis:",
               min = 1, max = 20, value = 10, step = 1),
   sliderInput("corcutoff", label = "Cutoff for the correlation coefficient",
-              min = 0, max = 1, value = NULL, step = 0.1),
+              min = 0, max = 1, value = 0.6, step = 0.1),
   textInput('diff', label = 'PMD set', value='2.02,15.99,18.01,14.02,162.05'),
   textInput('mass', label = 'Compound ion(s)', value= '542.7446'),
   textInput('formula', label = 'Compound Formula (alpha)', value= 'C15H11Br4O2'),
