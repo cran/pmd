@@ -57,6 +57,13 @@ df <- df[df$diffrt>120,]
 netc <- graph_from_data_frame(df,directed = F)
 plot(netc,vertex.label=NA,vertex.size = 5,edge.width = 3,main = 'Correlation network')
 
+## ----chainseq-----------------------------------------------------------------
+# Trace homologous series with 14.01 PMD (+CH2)
+homo <- gethomolog(spmeinvivo, unit = 14.01)
+
+# Trace complex sequences e.g. oxidation (15.99) followed by multiple repeated methylation (14.01+)
+sequence <- getchainseq(spmeinvivo, "15.99; 14.01+")
+
 ## ----source-------------------------------------------------------------------
 deg <- degree(net, mode = 'all')
 median(deg)

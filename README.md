@@ -63,6 +63,30 @@ To use the shiny application within the package, use the following code:
 runPMD()
 ```
 
+To find homologous series (e.g., repeated addition of CH2) or specific reaction sequences:
+
+```{r}
+# Find homologous series of CH2 (14.0157) with at least 3 nodes
+homolog_series <- gethomolog(spmeinvivo, unit = 14.0157, min_len = 3)
+
+# Find specific sequences (e.g., glycosylation followed by dehydration)
+seqs <- getchainseq(spmeinvivo, c(162.0528, -18.0106))
+```
+
+To screen the whole feature list against a curated database of known reaction chains (e.g. desaturation-elongation, hydroxylation-glucuronidation, sequential oxidation), use the built-in chain database:
+
+```{r}
+data("pmdchain")
+r <- getchainseq(spmeinvivo, db = pmdchain)
+# one row per database chain: which named chains are present in this sample,
+# how many matched paths were found, and the chain's `specificity` (the number
+# of KEGG reaction paths sharing the chain's PMD signature: lower = rarer =
+# more specific, so a rare-chain match carries more weight than a common edit)
+head(r$chainsearch)
+```
+
+A match here is a relational annotation (co-varying, chromatographically resolved features related by the chain's mass differences), not compound identification. Both shiny applications (`runPMD()` and `runPMDnet()`) also include a one-click "Screen for known reaction chains" panel for this database screening.
+
 To check the pmd reaction database:
 
 ```{r}
@@ -75,6 +99,9 @@ View(keggrall)
 # literature reaction for mass spectrometry
 data("sda")
 View(sda)
+# curated known reaction-chain database for screening
+data("pmdchain")
+View(pmdchain)
 ```
 
 To check the HMDB pmd database:

@@ -5,12 +5,12 @@
 \alias{sda}
 \title{A dataset containing common Paired mass distances of substructure, ions replacements, and reaction}
 \format{
-A data frame with 94 rows and 4 variables:
+A data frame with 146 rows and 4 variables:
 \describe{
   \item{PMD}{Paired mass distances}
   \item{origin}{potential sources}
   \item{Ref.}{references}
-  \item{mode}{positive, negative or both mode to find corresponding PMDs}
+  \item{mode}{b for biological reaction and e for environmental reaction}
   }
 }
 \usage{

@@ -2,7 +2,7 @@ Package: pmd
 Type: Package
 Title: Paired Mass Distance Analysis for GC/LC-MS Based Non-Targeted
         Analysis and Reactomics Analysis
-Version: 0.2.7
+Version: 0.3.0
 Authors@R: person(given = "Miao", family = "YU",
         role = c("aut", "cre"), 
         email = "yufreecas@gmail.com",
@@ -17,11 +17,12 @@ Suggests: knitr, shiny, rmarkdown
 VignetteBuilder: knitr
 biocViews:
 Depends: R (>= 3.5.0)
-Imports: RColorBrewer, stats, graphics, utils, igraph, enviGCMS
-RoxygenNote: 7.3.2
+Imports: RColorBrewer, stats, graphics, utils, igraph, enviGCMS,
+        data.table
+Config/roxygen2/version: 8.0.0
 NeedsCompilation: no
-Packaged: 2025-01-15 18:31:33 UTC; yufree
-Author: Miao YU [aut, cre] (<https://orcid.org/0000-0002-2804-6014>)
+Packaged: 2026-10-07 03:24:22 UTC; yufree
+Author: Miao YU [aut, cre] (ORCID: <https://orcid.org/0000-0002-2804-6014>)
 Maintainer: Miao YU <yufreecas@gmail.com>
 Repository: CRAN
-Date/Publication: 2025-01-15 19:40:05 UTC
+Date/Publication: 2026-10-07 04:00:02 UTC
